@@ -65,12 +65,16 @@ class DiscussionTabSingleThreadTest(UniqueCourseTest):
         super(DiscussionTabSingleThreadTest, self).setUp()
         self.discussion_id = "test_discussion_{}".format(uuid4().hex)
         # Create a course to register for
-        self.course_fixture = CourseFixture(**self.course_info).install()
+        self.course_fixture = CourseFixture(**self.course_info)
+        self.course_fixture.add_advanced_settings(
+            {'discussion_topics': {'value': {'Test Discussion Topic': {'id': self.discussion_id}}}}
+        )
+        self.course_fixture.install()
         self.setup_cohorts()
         AutoAuthPage(self.browser, course_id=self.course_id).visit()
 
     def setup_thread_page(self, thread_id):
-        self.thread_page = DiscussionTabSingleThreadPage(self.browser, self.course_id, thread_id)  # pylint: disable=attribute-defined-outside-init
+        self.thread_page = DiscussionTabSingleThreadPage(self.browser, self.course_id, self.discussion_id, thread_id)  # pylint: disable=attribute-defined-outside-init
         self.thread_page.visit()
 
     # pylint: disable=unused-argument
