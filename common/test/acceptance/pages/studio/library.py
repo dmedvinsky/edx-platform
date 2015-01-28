@@ -278,8 +278,8 @@ class StudioLibraryContainerXBlockWrapper(XBlockWrapper):
         Click "Update now..." button
         """
         btn_selector = self._bounded_selector(".library-update-btn")
-        refresh_button = self.q(css=btn_selector)
-        refresh_button.click()
+        self.wait_for_element_presence(btn_selector, 'Update now button is present.')
+        self.q(css=btn_selector).first.click()
 
         # Now wait for the ajax post to finish up
         self.wait_for_ajax()
