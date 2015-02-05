@@ -5,17 +5,13 @@ business logic that is not directly tied to the data itself.
 This API is exposed via the middleware(emabargo/middileware.py) layer but may be used directly in-process.
 
 """
-
-from functools import partial
 import logging
 import pygeoip
 
 from django.core.cache import cache
 from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponseForbidden
-
-from student.models import unique_id_for_user
-from embargo.models import CountryAccessRule, IPFilter, RestrictedCourse, WHITE_LIST, BLACK_LIST
+from embargo.models import CountryAccessRule, IPFilter, RestrictedCourse
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +46,7 @@ def _from_course_msg(course_id, course_is_embargoed):
         else u""
     )
 
+
 def _embargo_redirect_response():
     """
     The HTTP response to send when the user is blocked from a course.
@@ -70,49 +67,50 @@ def _embargo_redirect_response():
     return response
 
 
-def _is_embargoed_by_ip(ip_addr):
+def _check_ip_lists(ip_addr):
     """
     Check whether the user is embargoed based on the IP address.
 
     Args:
         ip_addr (str): The IP address the request originated from.
 
-    Keyword Args:
-        course_id (unicode): The course the user is trying to access.
-        course_is_embargoed (boolean): Whether the course the user is accessing has been embargoed.
-
     Returns:
-        A unicode message if the user is embargoed, otherwise `None`
+        A True if the user is not blacklisted, otherwise False
 
     """
     # If blacklisted, immediately fail
     if ip_addr in IPFilter.current().blacklist_ips:
-        return True
+        return False
 
     # If we're white-listed, then allow access
     if ip_addr in IPFilter.current().whitelist_ips:
-        return None
+        return True
+
+    return True
+    # If none of the other checks caught anything,
+    # implicitly return True to indicate that the user can access the course
 
 
-def _is_embargoed_user_country(country_code, course_id=u""):
-    # Retrieve the country code from the IP address
-    # and check it against the list of embargoed countries
+def _check_user_country(country_code, course_id=u""):
+    """
+    Check the user country has access on the course
+    Args:
+        country_code (str): The user country.
+        course_id (unicode): The course the user is trying to access.
+    """
+
     return CountryAccessRule.check_country_access(course_id, country_code)
 
 
-def get_user_country_from_profile(user, course_id=""):
+def get_user_country_from_profile(user):
     """
     Check whether the user is embargoed based on the country code in the user's profile.
 
     Args:
         user (User): The user attempting to access courseware.
 
-    Keyword Args:
-        course_id (unicode): The course the user is trying to access.
-        course_is_embargoed (boolean): Whether the course the user is accessing has been embargoed.
-
     Returns:
-        A unicode message if the user is embargoed, otherwise `None`
+        user country from profile.
 
     """
     cache_key = u'user.{user_id}.profile.country'.format(user_id=user.id)
@@ -146,7 +144,7 @@ def _country_code_from_ip(ip_addr):
         return pygeoip.GeoIP(settings.GEOIP_PATH).country_code_by_addr(ip_addr)
 
 
-def check_access(user, ip_address, course_key):
+def check_course_access(user, ip_address, course_key):
     """
     Check is the user with this ip_address has access to the given course
 
@@ -156,31 +154,35 @@ def check_access(user, ip_address, course_key):
         course_key (CourseLocator): CourseLocator object the user is trying to access
 
     Returns:
-        Redirect to a URL configured in Django settings or a forbidden response if any constraints fails or None
-
+        The return will be `None` if the user passes the check and can access the course.
+        if any constraints fails Redirect to a URL configured in Django settings or a forbidden response
     """
-
     course_is_restricted = RestrictedCourse.is_restricted_course(course_key)
     # If they're trying to access a course that cares about embargoes
 
+    # If course is not restricted then return immediately return True
+    # no need for further checking
     if not course_is_restricted:
-        return None
-
-    if _is_embargoed_by_ip(ip_address):
         return True
+
+    # If ipaddress has access return True
+    if not _check_ip_lists(ip_address):
+        return False
+
+    # Retrieve the country code from the IP address
+    # and check it against the allowed countries list for a course
 
     user_country_from_ip = _country_code_from_ip(ip_address)
-    if user_country_from_ip == '':
-        return None
+    # if user country has access to course return True
+    if not _check_user_country(user_country_from_ip, course_key):
+        return False
+    #
+    # Retrieve the country code from the user profile.
+    user_country_from_profile = get_user_country_from_profile(user)
+    # if profile country has access return True
+    if not _check_user_country(user_country_from_profile, course_key):
+        return False
 
-    if _is_embargoed_user_country(user_country_from_ip, course_key):
-        return True
+    return True
 
-    user_country_from_profile = get_user_country_from_profile(user, course_key)
-    if user_country_from_profile == '':
-        return None
-
-    if _is_embargoed_user_country(user_country_from_profile, course_key):
-        return True
-
-    return None
+    # If all the check functions pass, implicitly return True

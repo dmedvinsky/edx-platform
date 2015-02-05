@@ -136,18 +136,28 @@ class RestrictedCourse(models.Model):
 
     @classmethod
     def is_restricted_course(cls, course_id):
+        """
+        Check if the course is in restricted list
+
+        Args:
+            course_id (str): course_id to look for
+
+        Returns:
+            Boolean
+            True if course is in restricted course list.
+        """
         return unicode(course_id) in cls._get_restricted_courses_from_cache()
 
     @classmethod
-    def _get_restricted_courses_from_cache(self):
+    def _get_restricted_courses_from_cache(cls):
         """
         Cache all restricted courses and returns the list of course_keys that are restricted
         """
-        countries = cache.get(self.cache_key_name())
-        if not countries:
-            countries = list(RestrictedCourse.objects.values_list('course_key', flat=True))
-            cache.set(self.cache_key_name(), countries)
-        return countries
+        restricted_countries = cache.get(cls.cache_key_name())
+        if not restricted_countries:
+            restricted_countries = list(RestrictedCourse.objects.values_list('course_key', flat=True))
+            cache.set(cls.cache_key_name(), restricted_countries)
+        return restricted_countries
 
     def __unicode__(self):
         return unicode(self.course_key)
@@ -184,7 +194,7 @@ class Country(models.Model):
         )
 
     class Meta:
-        # Default ordering is ascending by country code
+        """Default ordering is ascending by country code """
         ordering = ['country']
 
 
@@ -235,8 +245,13 @@ class CountryAccessRule(models.Model):
 
     @classmethod
     def cache_key_for_consolidated_countries(cls, course_id):
+        """
+        Args:
+            course_id (str): course_id to look for
+        Returns:
+            Consolidated list of accessible countries for given course
+        """
         return "{}/allowed/countries".format(course_id)
-
 
     @classmethod
     def check_country_access(cls, course_id, country):
@@ -246,56 +261,58 @@ class CountryAccessRule(models.Model):
         Args:
             course_id (str): course_id to look for
             country (str): A 2 characters code of country
-            rule_type (str): whitelist or blacklist
 
         Returns:
             Boolean
-            True if no country found for the given course and rule type
+            True if country found in allowed country
             otherwise check given country exists in list
         """
+        cache.set(cls.cache_key_for_consolidated_countries(course_id), None)
+        allowed_countries = cache.get(cls.cache_key_for_consolidated_countries(course_id))
+        if not allowed_countries:
+            allowed_countries = cls._get_country_access_list(course_id)
+            cache.set(cls.cache_key_for_consolidated_countries(course_id), allowed_countries)
 
-        blocked = True
-        allowed_countries = cls._get_country_access_list(course_id)
-
-        if country in allowed_countries:
-            blocked = None
-
-        return blocked
-
+        if country == '' or country in allowed_countries:
+            return True
+        return False
 
     @classmethod
     def _get_country_access_list(cls, course_id):
-        allowed_countries = cache.get(cls.cache_key_for_consolidated_countries(course_id))
-        if not allowed_countries:
-            all_countries = [code[0] for code in list(countries)]
-            black_countries = cls._get_country_access_rules_for_course(course_id, BLACK_LIST)
-            white_countries = cls._get_country_access_rules_for_course(course_id, WHITE_LIST)
+        """
+        if a course is blacklist for two countries then course can be accessible from
+        any where except these two countries.
+        if a course is whitelist for two countries then course can be accessible from
+        these countries only.
+        Args:
+            course_id (str): course_id to look for
+        Returns:
+            List
+            Consolidated list of accessible countries for given course
+        """
 
-            if white_countries and black_countries:
-                allowed_countries = cls._get_country_access_rules_for_course(course_id, WHITE_LIST)
-            elif white_countries:
-                allowed_countries = cls._get_country_access_rules_for_course(course_id, WHITE_LIST)
-            elif black_countries:
-                allowed_countries = list(set(all_countries) - set(black_countries))
+        whitelist_countries = set()
+        blacklist_countries = set()
 
-            if allowed_countries:
-                cache.set(cls.cache_key_for_consolidated_countries(course_id), allowed_countries)
-            else:
-                cache.set(cls.cache_key_for_consolidated_countries(course_id), all_countries)
-        return allowed_countries
+        # Retrieve all rules in one database query, performing the "join" with the Country table
+        rules_for_course = CountryAccessRule.objects.select_related('country').filter(
+            restricted_course__course_key=course_id
+        )
 
+        # Filter the rules into a whitelist and blacklist in one pass
+        for rule in rules_for_course:
+            if rule.rule_type == 'whitelist':
+                whitelist_countries.add(rule.country.country.code)
+            elif rule.rule_type == 'blacklist':
+                blacklist_countries.add(rule.country.country.code)
 
-    @classmethod
-    def _get_country_access_rules_for_course(cls, course_id, rule_type):
-        course_embargoed_countries = cache.get(cls.cache_key_name(course_id, rule_type))
-        if not course_embargoed_countries:
-            qry = CountryAccessRule.objects.filter(restricted_course__course_key=course_id, rule_type=rule_type)
-            qry = qry.values_list('country__country', flat=True)
-            course_embargoed_countries = list(qry)
-            if len(course_embargoed_countries):
-                cache.set(cls.cache_key_name(course_id, rule_type), course_embargoed_countries)
-        return course_embargoed_countries
+        # If there are no whitelist countries, default to all countries
+        if not whitelist_countries:
+            whitelist_countries = set(code[0] for code in list(countries))
 
+        # Consolidate the rules into a single list of countries
+        # that have access to the course.
+        return list(whitelist_countries - blacklist_countries)
 
     def __unicode__(self):
         if self.rule_type == WHITE_LIST:
@@ -310,6 +327,7 @@ class CountryAccessRule(models.Model):
             )
 
     class Meta:
+        """a course can be added with either black or white list.  """
         unique_together = (
             # This restriction ensures that a country is on
             # either the whitelist or the blacklist, but

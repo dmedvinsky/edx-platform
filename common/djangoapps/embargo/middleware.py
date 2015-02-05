@@ -45,7 +45,7 @@ from util.request import course_id_from_url
 
 from student.models import unique_id_for_user
 from embargo.models import EmbargoedCourse, EmbargoedState, IPFilter
-from embargo.api import check_access
+from embargo.api import check_course_access
 
 log = logging.getLogger(__name__)
 
@@ -82,6 +82,8 @@ class EmbargoMiddleware(object):
         """
         if self.enable_country_access:
             if self.country_access_rules(request):
+                return None
+            else:
                 return self._embargo_redirect_response
         else:
             url = request.path
@@ -307,4 +309,4 @@ class EmbargoMiddleware(object):
     def country_access_rules(self, request):
         url = request.path
         course_id = course_id_from_url(url)
-        return check_access(request.user, get_ip(request), course_id)
+        return check_course_access(request.user, get_ip(request), course_id)
