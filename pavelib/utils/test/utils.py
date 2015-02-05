@@ -41,7 +41,7 @@ def clean_reports_dir(options):
     Clean coverage files, to ensure that we don't use stale data to generate reports.
     """
     if getattr(options, 'skip_clean', False):
-        print('skipping')
+        print('--skip_clean is set, skipping...')
         return
 
     # We delete the files but preserve the directory structure
