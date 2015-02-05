@@ -732,8 +732,8 @@ class ModuleStoreRead(ModuleStoreAssetBase):
         """
         pass
 
-    @contract(fields_or_xblock='XBlock | BlockData | dict', qualifiers=dict)
-    def _block_matches(self, fields_or_xblock, qualifiers):
+    @contract(block='XBlock | BlockData | dict', qualifiers=dict)
+    def _block_matches(self, block, qualifiers):
         """
         Return True or False depending on whether the field value (block contents)
         matches the qualifiers as per get_items.
@@ -744,17 +744,20 @@ class ModuleStoreRead(ModuleStoreAssetBase):
             pass the function as in start=lambda x: x < datetime.datetime(2014, 1, 1, 0, tzinfo=pytz.UTC)
 
         Args:
-            fields_or_xblock (dict, XBlock, or BlockData): either the json blob (from the db or
-                get_explicitly_set_fields) or the xblock.fields() value or the XBlock
-                from which to get those values
-             qualifiers (dict): field: searchvalue pairs.
+            block (dict, XBlock, or BlockData): either the BlockData (transformed from the db) -or-
+                a dict (from BlockData.fields or get_explicitly_set_fields_by_scope) -or-
+                the xblock.fields() value -or-
+                the XBlock from which to get the 'fields' value.
+             qualifiers (dict): {field: value} search pairs.
         """
-        if isinstance(fields_or_xblock, XBlock):
-            xblock, fields = (fields_or_xblock, fields_or_xblock.fields)
-        elif isinstance(fields_or_xblock, BlockData):
-            xblock, fields = (None, fields_or_xblock.__dict__)
+        if isinstance(block, XBlock):
+            # If an XBlock is passed-in, just match its fields.
+            xblock, fields = (block, block.fields)
+        elif isinstance(block, BlockData):
+            # BlockData is an object - compare its attributes in dict form.
+            xblock, fields = (None, block.__dict__)
         else:
-            xblock, fields = (None, fields_or_xblock)
+            xblock, fields = (None, block)
 
         def _is_set_on(key):
             """
@@ -766,7 +769,7 @@ class ModuleStoreRead(ModuleStoreAssetBase):
                 return False, None
             field = fields[key]
             if xblock is not None:
-                return field.is_set_on(fields_or_xblock), getattr(xblock, key)
+                return field.is_set_on(block), getattr(xblock, key)
             else:
                 return True, field
 
