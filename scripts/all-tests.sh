@@ -58,7 +58,7 @@ set -e
 # Clean up previous builds
 git clean -qxfd
 
-source $WORKSPACE/scripts/jenkins-common.sh
+source scripts/jenkins-common.sh
 
 # Violations thresholds for failing the build
 PYLINT_THRESHOLD=6300
@@ -98,7 +98,7 @@ END
                 paver test_system -s lms
                 paver coverage
                 ;;
-            "other")
+            "cms-js-commonlib")
                 paver test_system -s cms
                 paver test_js --skip_clean
                 paver test_lib --skip_clean

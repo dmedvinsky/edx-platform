@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source $WORKSPACE/scripts/jenkins-common.sh
+source scripts/jenkins-common.sh
 
 # Run coverage again to get the diff coverage report
 paver diff_coverage
