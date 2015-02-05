@@ -386,19 +386,14 @@ class EmbargoApiTests(ModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-    # @mock.patch.dict(settings.FEATURES, {'ENABLE_COUNTRY_ACCESS': True})
-    # def test_embargo_profile_country_cache(self):
-    #     # Set the country in the user's profile
-    #     profile = self.user.profile
-    #     profile.country = "us"
-    #     profile.save()
-    #
-    #     # Warm the cache
-    #     with self.assertNumQueries(26):
-    #         self.client.get(self.embargoed_course_blacklisted)
-    #
-    #     # Access the page multiple times, but expect that we hit
-    #     # the database to check the user's profile only once
-    #     with self.assertNumQueries(2):
-    #         self.client.get(self.embargoed_course_blacklisted)
-    #
+    @mock.patch.dict(settings.FEATURES, {'ENABLE_COUNTRY_ACCESS': True})
+    def test_embargo_profile_country_cache(self):
+        # Warm the cache
+        with self.assertNumQueries(25):
+            self.client.get(self.embargoed_course_blacklisted)
+
+        # Access the page multiple times, but expect that we hit
+        # the database to check the user's profile only once
+        with self.assertNumQueries(9):
+            self.client.get(self.embargoed_course_blacklisted)
+

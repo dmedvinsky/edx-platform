@@ -46,27 +46,6 @@ def _from_course_msg(course_id, course_is_embargoed):
         else u""
     )
 
-
-def _embargo_redirect_response():
-    """
-    The HTTP response to send when the user is blocked from a course.
-    This will either be a redirect to a URL configured in Django settings
-    or a forbidden response.
-
-    Returns:
-        HTTPResponse
-
-    """
-    redirect_url = getattr(settings, 'EMBARGO_SITE_REDIRECT_URL', None)
-    response = (
-        HttpResponseRedirect(redirect_url)
-        if redirect_url
-        else HttpResponseForbidden('Access Denied')
-    )
-
-    return response
-
-
 def _check_ip_lists(ip_addr):
     """
     Check whether the user is embargoed based on the IP address.
