@@ -15,37 +15,6 @@ from embargo.models import CountryAccessRule, IPFilter, RestrictedCourse
 
 log = logging.getLogger(__name__)
 
-# Reasons a user might be blocked.
-# These are used to generate info messages in the logs.
-REASONS = {
-    "ip_blacklist": u"Restricting IP address {ip_addr} {from_course} because IP is blacklisted.",
-    "ip_country": u"Restricting IP address {ip_addr} {from_course} because IP is from country {ip_country}.",
-    "profile_country": (
-        u"Restricting user {user_id} {from_course} because "
-        u"the user set the profile country to {profile_country}."
-    )
-}
-
-
-def _from_course_msg(course_id, course_is_embargoed):
-    """
-    Format a message indicating whether the user was blocked from a specific course.
-    This can be used in info messages, but should not be used in user-facing messages.
-
-    Args:
-        course_id (unicode): The ID of the course being accessed.
-        course_is_embarged (boolean): Whether the course being accessed is embargoed.
-
-    Returns:
-        unicode
-
-    """
-    return (
-        u"from course {course_id}".format(course_id=course_id)
-        if course_is_embargoed
-        else u""
-    )
-
 def _check_ip_lists(ip_addr):
     """
     Check whether the user is embargoed based on the IP address.
