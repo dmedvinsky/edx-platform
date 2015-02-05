@@ -156,7 +156,6 @@ $notes-annotator-background-dark: rgba(122,122,122,0.6); // taken from annotator
         width: 16px;
         height: 16px;
         content: " ";
-        background: $gray-l5;
         border-bottom: 1px solid $gray-l2;
         border-right: 1px solid $gray-l2;
       }
@@ -165,6 +164,10 @@ $notes-annotator-background-dark: rgba(122,122,122,0.6); // taken from annotator
 
   // editing
   .annotator-editor {
+
+    &:after {
+      background: $gray-l5;
+    }
 
     .annotator-controls {
       @include text-align(left);
@@ -259,6 +262,10 @@ $notes-annotator-background-dark: rgba(122,122,122,0.6); // taken from annotator
   // content
   .annotator-viewer {
 
+    &:after {
+      background: $gray-l5;
+    }
+
     // poorly scoped selector for content of a note's comment
     div:first-of-type {
       @extend %notes-reset-font;
@@ -296,7 +303,7 @@ $notes-annotator-background-dark: rgba(122,122,122,0.6); // taken from annotator
         &:before {
           top: 0;
           @include left(0);
-          content: "\f044";
+          content: "\f040"; // .fa-pencil
         }
       }
 
@@ -305,7 +312,7 @@ $notes-annotator-background-dark: rgba(122,122,122,0.6); // taken from annotator
         &:before {
           top: -($baseline/20);
           @include left(0);
-          content: "\f00d";
+          content: "\f1f8"; // .fa-trash
         }
       }
     }
