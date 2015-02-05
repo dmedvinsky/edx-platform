@@ -267,7 +267,6 @@ class CountryAccessRule(models.Model):
             True if country found in allowed country
             otherwise check given country exists in list
         """
-        cache.set(cls.cache_key_for_consolidated_countries(course_id), None)
         allowed_countries = cache.get(cls.cache_key_for_consolidated_countries(course_id))
         if not allowed_countries:
             allowed_countries = cls._get_country_access_list(course_id)
