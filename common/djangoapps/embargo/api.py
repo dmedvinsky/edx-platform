@@ -15,6 +15,7 @@ from embargo.models import CountryAccessRule, IPFilter, RestrictedCourse
 
 log = logging.getLogger(__name__)
 
+
 def _check_ip_lists(ip_addr):
     """
     Check whether the user is embargoed based on the IP address.
@@ -37,17 +38,6 @@ def _check_ip_lists(ip_addr):
     return True
     # If none of the other checks caught anything,
     # implicitly return True to indicate that the user can access the course
-
-
-def _check_user_country(country_code, course_id=u""):
-    """
-    Check the user country has access on the course
-    Args:
-        country_code (str): The user country.
-        course_id (unicode): The course the user is trying to access.
-    """
-
-    return CountryAccessRule.check_country_access(course_id, country_code)
 
 
 def get_user_country_from_profile(user):
@@ -102,8 +92,8 @@ def check_course_access(user, ip_address, course_key):
         course_key (CourseLocator): CourseLocator object the user is trying to access
 
     Returns:
-        The return will be `None` if the user passes the check and can access the course.
-        if any constraints fails Redirect to a URL configured in Django settings or a forbidden response
+        The return will be True if the user has access on the course.
+        if any constraints fails it will return the False
     """
     course_is_restricted = RestrictedCourse.is_restricted_course(course_key)
     # If they're trying to access a course that cares about embargoes
@@ -122,15 +112,14 @@ def check_course_access(user, ip_address, course_key):
 
     user_country_from_ip = _country_code_from_ip(ip_address)
     # if user country has access to course return True
-    if not _check_user_country(user_country_from_ip, course_key):
+    if not CountryAccessRule.check_country_access(course_key, user_country_from_ip):
         return False
     #
     # Retrieve the country code from the user profile.
     user_country_from_profile = get_user_country_from_profile(user)
     # if profile country has access return True
-    if not _check_user_country(user_country_from_profile, course_key):
+    if not CountryAccessRule.check_country_access(course_key, user_country_from_profile):
         return False
 
     return True
 
-    # If all the check functions pass, implicitly return True

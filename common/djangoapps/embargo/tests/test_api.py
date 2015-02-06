@@ -121,8 +121,11 @@ class EmbargoApiTests(ModuleStoreTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Accessing an embargoed page from a non-embargoed IP should succeed
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='5.0.0.0',
-                                   REMOTE_ADDR='5.0.0.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='5.0.0.0',
+            REMOTE_ADDR='5.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular page from a non-embargoed IP should succeed
@@ -148,16 +151,27 @@ class EmbargoApiTests(ModuleStoreTestCase):
         self.assertIn(self.embargo_text, response.content)
 
         # Accessing a regular page from a blocked IP should succeed
-        response = self.client.get(self.regular_page, HTTP_X_FORWARDED_FOR='2001:1340::', REMOTE_ADDR='2001:1340::')
+        response = self.client.get(
+            self.regular_page,
+            HTTP_X_FORWARDED_FOR='2001:1340::',
+            REMOTE_ADDR='2001:1340::'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing an embargoed page from a non-embargoed IP should succeed
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='2001:250::',
-                                   REMOTE_ADDR='2001:250::')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='2001:250::',
+            REMOTE_ADDR='2001:250::'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular page from a non-embargoed IP should succeed
-        response = self.client.get(self.regular_page, HTTP_X_FORWARDED_FOR='2001:250::', REMOTE_ADDR='2001:250::')
+        response = self.client.get(
+            self.regular_page,
+            HTTP_X_FORWARDED_FOR='2001:250::',
+            REMOTE_ADDR='2001:250::'
+        )
         self.assertEqual(response.status_code, 200)
 
     @mock.patch.dict(settings.FEATURES, {'ENABLE_COUNTRY_ACCESS': True})
@@ -172,18 +186,28 @@ class EmbargoApiTests(ModuleStoreTestCase):
 
         # Accessing an embargoed page from a blocked IP that's been whitelisted
         # should succeed
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='1.0.0.0',
-                                   REMOTE_ADDR='1.0.0.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='1.0.0.0',
+            REMOTE_ADDR='1.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular course from a blocked IP that's been whitelisted should succeed
-        response = self.client.get(self.regular_page, HTTP_X_FORWARDED_FOR='1.0.0.0', REMOTE_ADDR='1.0.0.0')
+        response = self.client.get(
+            self.regular_page,
+            HTTP_X_FORWARDED_FOR='1.0.0.0',
+            REMOTE_ADDR='1.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing an embargoed course from non-embargoed IP that's been blacklisted
         #  should cause a redirect
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='5.0.0.0',
-                                   REMOTE_ADDR='5.0.0.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='5.0.0.0',
+            REMOTE_ADDR='5.0.0.0'
+        )
         self.assertEqual(response.status_code, 302)
         # Following the redirect should give us the embargo page
         response = self.client.get(
@@ -210,8 +234,11 @@ class EmbargoApiTests(ModuleStoreTestCase):
 
         # Accessing an embargoed page from a blocked IP that's been whitelisted with a network
         # should succeed
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='1.0.0.0',
-                                   REMOTE_ADDR='1.0.0.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='1.0.0.0',
+            REMOTE_ADDR='1.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular course from a blocked IP that's been whitelisted with a network
@@ -221,8 +248,11 @@ class EmbargoApiTests(ModuleStoreTestCase):
 
         # Accessing an embargoed course from non-embargoed IP that's been blacklisted with a network
         # should cause a redirect
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='5.0.0.100',
-                                   REMOTE_ADDR='5.0.0.100')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='5.0.0.100',
+            REMOTE_ADDR='5.0.0.100'
+        )
         self.assertEqual(response.status_code, 302)
 
         # Following the redirect should give us the embargo page
@@ -236,8 +266,11 @@ class EmbargoApiTests(ModuleStoreTestCase):
 
         # Accessing an embargoed course from non-embargoed IP that's been blaclisted with a network
         # should cause a redirect
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='1.1.0.1',
-                                   REMOTE_ADDR='1.1.0.1')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='1.1.0.1',
+            REMOTE_ADDR='1.1.0.1'
+        )
         self.assertEqual(response.status_code, 302)
         # Following the redirect should give us the embargo page
         response = self.client.get(
@@ -250,8 +283,11 @@ class EmbargoApiTests(ModuleStoreTestCase):
 
         # Accessing an embargoed from a blocked IP that's not blacklisted by the network rule.
         # should succeed
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='1.1.1.0',
-                                   REMOTE_ADDR='1.1.1.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='1.1.1.0',
+            REMOTE_ADDR='1.1.1.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular course from a non-embargoed IP that's been blacklisted
@@ -282,8 +318,11 @@ class EmbargoApiTests(ModuleStoreTestCase):
     def test_countries_embargo_off(self):
         # When the middleware is turned off, all requests should go through
         # Accessing an embargoed page from a blocked IP OK
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='1.0.0.0',
-                                   REMOTE_ADDR='1.0.0.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='1.0.0.0',
+            REMOTE_ADDR='1.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular page from a blocked IP should succeed
@@ -292,12 +331,19 @@ class EmbargoApiTests(ModuleStoreTestCase):
 
         # Accessing an embargoed course from non-embargoed IP that's been blacklisted
         # should be OK
-        response = self.client.get(self.embargoed_course_blacklisted, HTTP_X_FORWARDED_FOR='50.0.0.0',
-                                   REMOTE_ADDR='50.0.0.0')
+        response = self.client.get(
+            self.embargoed_course_blacklisted,
+            HTTP_X_FORWARDED_FOR='50.0.0.0',
+            REMOTE_ADDR='50.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
         # Accessing a regular course from a non-embargoed IP that's been blacklisted should succeed
-        response = self.client.get(self.regular_page, HTTP_X_FORWARDED_FOR='50.0.0.0', REMOTE_ADDR='50.0.0.0')
+        response = self.client.get(
+            self.regular_page,
+            HTTP_X_FORWARDED_FOR='50.0.0.0',
+            REMOTE_ADDR='50.0.0.0'
+        )
         self.assertEqual(response.status_code, 200)
 
     @mock.patch.dict(settings.FEATURES, {'ENABLE_COUNTRY_ACCESS': True})

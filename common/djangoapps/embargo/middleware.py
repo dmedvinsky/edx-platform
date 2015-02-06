@@ -307,6 +307,18 @@ class EmbargoMiddleware(object):
         return _inner
 
     def country_access_rules(self, request):
+        """
+        check the country access rules for a given course.
+        if course id is invalid return True
+        Args:
+            request
+
+        Return:
+            boolean: True if the user has access else false.
+
+        """
         url = request.path
         course_id = course_id_from_url(url)
+        if course_id is None:
+            return True
         return check_course_access(request.user, get_ip(request), course_id)
