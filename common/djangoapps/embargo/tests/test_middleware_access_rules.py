@@ -1,5 +1,5 @@
 """
-Tests for EmbargoMiddleware
+Tests for EmbargoMiddleware with CountryAccessRules
 """
 
 import mock
